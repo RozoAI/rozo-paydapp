@@ -9,8 +9,7 @@ import {
 	useLoaderData,
 } from "react-router";
 
-import type { Route } from "./+types/root";
-import "./app.css";
+import "@rainbow-me/rainbowkit/styles.css";
 import {
 	PreventFlashOnWrongTheme,
 	Theme,
@@ -19,7 +18,9 @@ import {
 } from "remix-themes";
 import { themeSessionResolver } from "~/lib/cookies/theme.server";
 import { env } from "~/lib/env.server";
-import IntercomInitializer from "./components/intercom/intercom";
+import type { Route } from "./+types/root";
+import "./app.css";
+import IntercomInitializer from "./components/intercom";
 
 export const links: Route.LinksFunction = () => [
 	{ rel: "preconnect", href: "https://fonts.googleapis.com" },
