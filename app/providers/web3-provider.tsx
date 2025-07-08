@@ -57,6 +57,7 @@ const config = (projectId: string) =>
 			[bsc.id]: http(),
 			[celo.id]: http(),
 		},
+		ssr: true,
 	});
 
 const queryClient = new QueryClient();
