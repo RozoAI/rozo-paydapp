@@ -1,10 +1,12 @@
 import { Theme, useTheme } from "remix-themes";
-import BoxedCard from "~/components/boxed-card/boxed-card";
+import BoxedCard from "~/components/boxed-card";
+import ConnectWalletButton from "~/components/connect-wallet-button";
 import { Avatar, AvatarImage } from "~/components/ui/avatar";
 import { CardContent } from "~/components/ui/card";
 
 export default function Home() {
 	const [theme] = useTheme();
+
 	return (
 		<BoxedCard>
 			<CardContent className="flex flex-1 flex-col items-center justify-center pt-6 md:pt-0">
@@ -21,10 +23,13 @@ export default function Home() {
 				</div>
 
 				<p className="my-4 text-center text-lg">
-					Take control of your crypto payments with advanced priority settings.
-					Configure preferences for EVM networks with our flexible three-tier
-					system. Enjoy seamless, secure transactions tailored to your needs.
+					Connect your wallet to access personalized token management. Select
+					your preferred payment tokens, pin your favorites as default, and
+					enjoy a streamlined crypto experience designed for mobile-first
+					interactions.
 				</p>
+
+				<ConnectWalletButton />
 			</CardContent>
 		</BoxedCard>
 	);
