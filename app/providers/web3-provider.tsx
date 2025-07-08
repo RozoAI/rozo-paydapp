@@ -20,55 +20,47 @@ import { Theme, useTheme } from "remix-themes";
 import { createConfig, http, WagmiProvider } from "wagmi";
 import { arbitrum, bsc, celo, mainnet } from "wagmi/chains";
 
-const connectors = (projectId: string) =>
-	connectorsForWallets(
-		[
-			{
-				groupName: "Recommended",
-				wallets: [metaMaskWallet, okxWallet],
-			},
-			{
-				groupName: "Others",
-				wallets: [
-					coinbaseWallet,
-					trustWallet,
-					rainbowWallet,
-					walletConnectWallet,
-					binanceWallet,
-					phantomWallet,
-				],
-			},
-		],
+const connectors = connectorsForWallets(
+	[
 		{
-			appName: "Rozo Pay DApp",
-			appIcon: "https://rozo.ai/rozo-logo.png",
-			appUrl: "https:/dapp.rozo.ai/",
-			projectId,
+			groupName: "Recommended",
+			wallets: [metaMaskWallet, okxWallet],
 		},
-	);
+		{
+			groupName: "Others",
+			wallets: [
+				coinbaseWallet,
+				trustWallet,
+				rainbowWallet,
+				walletConnectWallet,
+				binanceWallet,
+				phantomWallet,
+			],
+		},
+	],
+	{
+		appName: "Rozo Pay DApp",
+		appIcon: "https://rozo.ai/rozo-logo.png",
+		appUrl: "https:/dapp.rozo.ai/",
+		projectId: import.meta.env.VITE_WALLET_CONNECT_ID,
+	},
+);
 
-const config = (projectId: string) =>
-	createConfig({
-		connectors: connectors(projectId),
-		chains: [mainnet, arbitrum, bsc, celo],
-		transports: {
-			[mainnet.id]: http(),
-			[arbitrum.id]: http(),
-			[bsc.id]: http(),
-			[celo.id]: http(),
-		},
-		ssr: true,
-	});
+const config = createConfig({
+	connectors,
+	chains: [mainnet, arbitrum, bsc, celo],
+	transports: {
+		[mainnet.id]: http(),
+		[arbitrum.id]: http(),
+		[bsc.id]: http(),
+		[celo.id]: http(),
+	},
+	ssr: true,
+});
 
 const queryClient = new QueryClient();
 
-export function Web3Provider({
-	children,
-	projectId,
-}: {
-	children: React.ReactNode;
-	projectId: string;
-}) {
+export function Web3Provider({ children }: { children: React.ReactNode }) {
 	const [theme] = useTheme();
 
 	// Memoize the theme to prevent unnecessary re-renders
@@ -77,7 +69,7 @@ export function Web3Provider({
 	}, [theme]);
 
 	return (
-		<WagmiProvider config={config(projectId)}>
+		<WagmiProvider config={config}>
 			<QueryClientProvider client={queryClient}>
 				<RainbowKitProvider theme={rainbowKitTheme}>
 					{children}
