@@ -37,7 +37,7 @@ export default function ConnectWalletButton() {
 			disconnect();
 			setFirstLoad(false);
 		} else if (status === "connected" && isConnected && firstLoad) {
-			generateSign();
+			// generateSign();
 		}
 	}, [status, isConnected, firstLoad, disconnect]);
 

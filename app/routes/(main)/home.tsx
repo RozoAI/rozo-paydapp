@@ -1,16 +1,20 @@
 import { Theme, useTheme } from "remix-themes";
+import { useAccount } from "wagmi";
 import BoxedCard from "~/components/boxed-card";
 import ConnectWalletButton from "~/components/connect-wallet-button";
+import ListTokens from "~/components/list-tokens";
 import { Avatar, AvatarImage } from "~/components/ui/avatar";
 import { CardContent } from "~/components/ui/card";
 
 export default function Home() {
 	const [theme] = useTheme();
 
+	const { isConnected, address } = useAccount();
+
 	return (
 		<BoxedCard>
 			<CardContent className="flex flex-1 flex-col items-center justify-center pt-6 md:pt-0">
-				<div className="mb-2 flex flex-col items-center justify-center gap-1">
+				<div className="mt-6 mb-2 flex flex-col items-center justify-center gap-1">
 					<Avatar className="size-8 rounded-none">
 						<AvatarImage
 							src={theme === Theme.DARK ? "/logo-white.png" : "/logo.png"}
@@ -30,6 +34,8 @@ export default function Home() {
 				</p>
 
 				<ConnectWalletButton />
+
+				{isConnected && address && <ListTokens />}
 			</CardContent>
 		</BoxedCard>
 	);

@@ -19,6 +19,7 @@
 		"@react-router/serve": "^7.6.3",
 		"@t3-oss/env-core": "^0.13.8",
 		"@tanstack/react-query": "^5.81.5",
+		"alchemy-sdk": "^3.6.1",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"dotenv": "^17.1.0",
