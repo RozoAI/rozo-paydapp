@@ -7,5 +7,5 @@ export const config = getDefaultConfig({
 	projectId: import.meta.env.VITE_WALLET_CONNECT_ID,
 	appName: "Rozo Pay DApp",
 	appIcon: "https://rozo.ai/rozo-logo.png",
-	appUrl: "https:/dapp.rozo.ai/",
+	appUrl: "dapp.rozo.ai",
 });
