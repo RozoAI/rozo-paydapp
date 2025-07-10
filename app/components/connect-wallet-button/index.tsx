@@ -92,23 +92,12 @@ export default function ConnectWalletButton() {
 					return (
 						<div className="mx-auto flex w-full max-w-full items-center justify-between gap-2 rounded-lg border border-green-200 bg-green-50 p-3 sm:gap-4 dark:border-green-800 dark:bg-green-900/20">
 							<div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-								{chain.hasIcon && chain.iconUrl && (
-									<div className="flex-shrink-0">
-										<img
-											alt={chain.name ?? "Chain icon"}
-											src={chain.iconUrl}
-											width={20}
-											height={20}
-											className="sm:h-6 sm:w-6"
-											style={{ borderRadius: "999px" }}
-										/>
-									</div>
-								)}
+								<Wallet className="size-6 text-green-600" />
 								<div className="flex min-w-0 flex-1 flex-col">
-									<span className="truncate font-medium text-green-700 text-xs sm:text-sm dark:text-green-300">
+									<span className="truncate font-medium text-green-700 text-sm dark:text-green-300">
 										Connected
 									</span>
-									<span className="truncate text-green-600 text-xs dark:text-green-400">
+									<span className="truncate text-green-600 text-sm dark:text-green-400">
 										{account.displayName}
 									</span>
 								</div>
@@ -117,18 +106,16 @@ export default function ConnectWalletButton() {
 								<Button
 									onClick={handleCopy}
 									className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
-									size="icon"
 									type="button"
-									variant="ghost"
+									variant="link"
 								>
 									<Copy className="h-4 w-4" />
 								</Button>
 								<Button
 									onClick={openAccountModal}
 									className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
-									size="icon"
 									type="button"
-									variant="ghost"
+									variant="link"
 								>
 									<Settings className="h-4 w-4" />
 								</Button>

@@ -21,7 +21,7 @@ export default function Layout() {
 					<Footer className="py-8" />
 					<FabActions />
 				</main>
-				<Toaster richColors position="top-center" />
+				<Toaster position="top-center" />
 			</AuthProvider>
 		</Web3Provider>
 	);
