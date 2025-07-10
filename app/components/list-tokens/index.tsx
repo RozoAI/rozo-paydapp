@@ -54,6 +54,10 @@ export default function ListTokens() {
 		return tokenBalances.find((token) => token.id === selectedTokenPriority);
 	}, [tokenBalances, selectedTokenPriority]);
 
+	const filteredTokenBalances = useMemo(() => {
+		return tokenBalances.filter((token) => token.balance > 0);
+	}, [tokenBalances]);
+
 	const fetchTokenBalances = useCallback(
 		async (walletAddress: Address) => {
 			try {
@@ -89,7 +93,9 @@ export default function ListTokens() {
 							symbol: knownToken.symbol,
 							name: knownToken.name,
 							chainId: knownToken.chainId,
-							balance: Number.parseFloat(formattedBalance),
+							balance: Number.parseFloat(
+								Number.parseFloat(formattedBalance).toFixed(4),
+							),
 							logoURI: knownToken.logoURI,
 							network: knownToken.chainId as unknown as Network,
 						};
@@ -165,7 +171,7 @@ export default function ListTokens() {
 				onValueChange={setSelectedTokenPriority}
 				className="grid gap-4"
 			>
-				{tokenBalances.map((item) => {
+				{filteredTokenBalances.map((item) => {
 					const logo = item.logoURI;
 					const isSelected = selectedTokenPriority === item.id;
 
@@ -210,8 +216,7 @@ export default function ListTokens() {
 														{item.symbol}
 													</span>
 												</h3>
-												<span className="font-medium text-muted-foreground text-sm text-right">
-													{item.name} <br />
+												<span className="text-right font-medium text-muted-foreground text-sm">
 													{getNetworkName(item.chainId)}
 												</span>
 											</div>
@@ -238,15 +243,15 @@ export default function ListTokens() {
 
 			{/* Floating bottom confirmation container */}
 			{selectedTokenPriority && (
-				<div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transform animate-in slide-in-from-bottom-4 duration-300">
-					<Card className="border-2 border-primary/20 bg-background/95 backdrop-blur-sm shadow-2xl">
+				<div className="-translate-x-1/2 slide-in-from-bottom-4 fixed bottom-6 left-1/2 z-50 transform animate-in duration-300">
+					<Card className="border-2 border-primary/20 bg-background/95 shadow-2xl backdrop-blur-sm">
 						<CardContent className="flex items-center gap-4 p-4">
-							<div className="flex items-center gap-3 min-w-0 flex-1">
+							<div className="flex min-w-0 flex-1 items-center gap-3">
 								<div className="flex-shrink-0">
 									<CircleCheck className="h-5 w-5 text-primary" />
 								</div>
 								<div className="min-w-0 flex-1">
-									<p className="font-semibold text-sm truncate">
+									<p className="truncate font-semibold text-sm">
 										{selectedToken?.name} (
 										{getNetworkName(selectedToken?.chainId ?? 0)})
 									</p>
@@ -259,7 +264,7 @@ export default function ListTokens() {
 								variant="ghost"
 								size="sm"
 								onClick={() => setSelectedTokenPriority("")}
-								className="h-8 w-8 p-0 flex-shrink-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
+								className="h-8 w-8 flex-shrink-0 p-0 transition-colors hover:bg-destructive/10 hover:text-destructive"
 								aria-label="Clear selection"
 							>
 								<X className="h-4 w-4" />
