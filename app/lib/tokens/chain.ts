@@ -194,3 +194,8 @@ export function getChainExplorerTxUrl(chainId: number, txHash: string) {
 	}
 	return `${explorer}/tx/${txHash}`;
 }
+
+export function getNetworkName(chainId: number): string {
+	const chain = getChainById(chainId);
+	return chain.name;
+}

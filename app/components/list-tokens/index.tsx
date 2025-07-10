@@ -3,16 +3,20 @@ import type {
 	TokenMetadataResponse,
 	TokenPriceByAddressResult,
 } from "alchemy-sdk";
-import { Loader2 } from "lucide-react";
+import { Check, CircleCheck, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { type Address, formatUnits, getAddress, hexToBigInt } from "viem";
 import { useAccount } from "wagmi";
 import { alchemy } from "~/alchemy";
-import { knownAlchemyTokens, knownTokens } from "~/lib/tokens";
+import { getNetworkName, knownAlchemyTokens, knownTokens } from "~/lib/tokens";
 import { Button } from "../ui/button";
+import { Card, CardContent } from "../ui/card";
+import { Label } from "../ui/label";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 type TokenBalance = {
+	id: string;
 	network: Network;
 	address: string;
 	tokenBalance: string;
@@ -31,6 +35,7 @@ export default function ListTokens() {
 	const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isError, setIsError] = useState(false);
+	const [selectedTokenPriority, setSelectedTokenPriority] = useState("");
 
 	const { isConnected, address } = useAccount();
 
@@ -44,6 +49,10 @@ export default function ListTokens() {
 			tokenMap: map,
 		};
 	}, []);
+
+	const selectedToken = useMemo(() => {
+		return tokenBalances.find((token) => token.id === selectedTokenPriority);
+	}, [tokenBalances, selectedTokenPriority]);
 
 	const fetchTokenBalances = useCallback(
 		async (walletAddress: Address) => {
@@ -76,6 +85,7 @@ export default function ListTokens() {
 
 						return {
 							...item,
+							id: `${item.tokenAddress}-${knownToken.chainId}`,
 							symbol: knownToken.symbol,
 							name: knownToken.name,
 							chainId: knownToken.chainId,
@@ -121,36 +131,6 @@ export default function ListTokens() {
 		}
 	}, [address, fetchTokenBalances]);
 
-	const renderTokenItem = useCallback((token: TokenBalance) => {
-		if (!token) return null;
-
-		return (
-			<div
-				key={`${token.tokenAddress}-${token.chainId}`}
-				className="flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent/50"
-			>
-				{token.logoURI && (
-					<div className="relative">
-						<img
-							src={token.logoURI}
-							alt={token.name}
-							className="size-10"
-							loading="lazy"
-						/>
-					</div>
-				)}
-				<div className="flex flex-1 flex-col gap-1">
-					<span className="font-medium">
-						{token.balance}{" "}
-						<span className="text-muted-foreground">
-							on {token.name || "-"}
-						</span>
-					</span>
-				</div>
-			</div>
-		);
-	}, []);
-
 	if (isLoading) {
 		return <Loader2 className="mt-6 size-8 animate-spin" />;
 	}
@@ -172,10 +152,126 @@ export default function ListTokens() {
 
 	return (
 		<div className="mt-8 flex w-full flex-col gap-3">
-			<h2 className="font-semibold text-lg">Token Balances</h2>
-			<div className="flex flex-col gap-3">
-				{tokenBalances.map(renderTokenItem)}
+			<div className="mb-6">
+				<h2 className="mb-2 font-bold text-2xl">Choose your token priority</h2>
+				<p className="text-muted-foreground">
+					Choose your preferred payment token. It will be used as default for
+					all transactions.
+				</p>
 			</div>
+
+			<RadioGroup
+				value={selectedTokenPriority}
+				onValueChange={setSelectedTokenPriority}
+				className="grid gap-4"
+			>
+				{tokenBalances.map((item) => {
+					const logo = item.logoURI;
+					const isSelected = selectedTokenPriority === item.id;
+
+					return (
+						<div key={item.id}>
+							<RadioGroupItem
+								value={item.id}
+								id={item.id}
+								className="sr-only"
+							/>
+
+							<Label
+								htmlFor={item.id}
+								className="w-full cursor-pointer"
+								onClick={() => {
+									if (selectedTokenPriority === item.id) {
+										setSelectedTokenPriority("");
+									} else {
+										setSelectedTokenPriority(item.id);
+									}
+								}}
+							>
+								<Card
+									className={`w-full transition-all duration-200 hover:shadow-md ${
+										isSelected
+											? "border-primary bg-primary/5 ring-2 ring-primary"
+											: "hover:border-primary/50"
+									}`}
+								>
+									<CardContent className="flex items-center gap-4 p-4">
+										<div className={"flex-shrink-0 rounded-lg p-2"}>
+											{logo && (
+												<img src={logo} alt={item.name} className="size-10" />
+											)}
+										</div>
+
+										<div className="min-w-0 flex-1">
+											<div className="flex items-center justify-between">
+												<h3 className="font-semibold text-sm">
+													{item.balance}{" "}
+													<span className="text-muted-foreground">
+														{item.symbol}
+													</span>
+												</h3>
+												<span className="font-medium text-muted-foreground text-sm text-right">
+													{item.name} <br />
+													{getNetworkName(item.chainId)}
+												</span>
+											</div>
+										</div>
+
+										<div
+											className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+												isSelected
+													? "border-primary bg-primary"
+													: "border-muted-foreground/30"
+											}`}
+										>
+											{isSelected && (
+												<Check className="h-3 w-3 text-primary-foreground" />
+											)}
+										</div>
+									</CardContent>
+								</Card>
+							</Label>
+						</div>
+					);
+				})}
+			</RadioGroup>
+
+			{/* Floating bottom confirmation container */}
+			{selectedTokenPriority && (
+				<div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transform animate-in slide-in-from-bottom-4 duration-300">
+					<Card className="border-2 border-primary/20 bg-background/95 backdrop-blur-sm shadow-2xl">
+						<CardContent className="flex items-center gap-4 p-4">
+							<div className="flex items-center gap-3 min-w-0 flex-1">
+								<div className="flex-shrink-0">
+									<CircleCheck className="h-5 w-5 text-primary" />
+								</div>
+								<div className="min-w-0 flex-1">
+									<p className="font-semibold text-sm truncate">
+										{selectedToken?.name} (
+										{getNetworkName(selectedToken?.chainId ?? 0)})
+									</p>
+									<p className="text-muted-foreground text-xs">
+										Payment token selected
+									</p>
+								</div>
+							</div>
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => setSelectedTokenPriority("")}
+								className="h-8 w-8 p-0 flex-shrink-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
+								aria-label="Clear selection"
+							>
+								<X className="h-4 w-4" />
+							</Button>
+						</CardContent>
+					</Card>
+				</div>
+			)}
+
+			{/* <div className="flex flex-col gap-3">
+				{tokenBalances.map(renderTokenItem)}
+			</div> */}
 		</div>
 	);
 }
