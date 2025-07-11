@@ -3,17 +3,19 @@ import type {
 	TokenMetadataResponse,
 	TokenPriceByAddressResult,
 } from "alchemy-sdk";
-import { Check, CircleCheck, Loader2, X } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { type Address, formatUnits, getAddress, hexToBigInt } from "viem";
 import { useAccount } from "wagmi";
 import { alchemy } from "~/alchemy";
 import { getNetworkName, knownAlchemyTokens, knownTokens } from "~/lib/tokens";
+import { chainToLogo } from "../icons/chains";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import "./style.css";
 
 type TokenBalance = {
 	id: string;
@@ -94,7 +96,9 @@ export default function ListTokens() {
 							name: knownToken.name,
 							chainId: knownToken.chainId,
 							balance: Number.parseFloat(
-								Number.parseFloat(formattedBalance).toFixed(4),
+								Number.parseFloat(formattedBalance).toFixed(
+									knownToken.decimals === 18 ? 5 : 2,
+								),
 							),
 							logoURI: knownToken.logoURI,
 							network: knownToken.chainId as unknown as Network,
@@ -158,7 +162,7 @@ export default function ListTokens() {
 
 	return (
 		<div className="mt-8 flex w-full flex-col gap-3">
-			<div className="mb-6">
+			<div className="mb-4">
 				<h2 className="mb-2 font-bold text-2xl">Choose your token priority</h2>
 				<p className="text-muted-foreground">
 					Choose your preferred payment token. It will be used as default for
@@ -174,6 +178,7 @@ export default function ListTokens() {
 				{filteredTokenBalances.map((item) => {
 					const logo = item.logoURI;
 					const isSelected = selectedTokenPriority === item.id;
+					const chainLogo = chainToLogo[item.chainId];
 
 					return (
 						<div key={item.id}>
@@ -201,21 +206,30 @@ export default function ListTokens() {
 											: "hover:border-primary/50"
 									}`}
 								>
-									<CardContent className="flex items-center gap-4 p-4">
-										<div className={"flex-shrink-0 rounded-lg p-2"}>
+									<CardContent className="flex items-center gap-3 p-3">
+										<div className={"relative flex-shrink-0 rounded-lg p-1.5"}>
 											{logo && (
 												<img src={logo} alt={item.name} className="size-10" />
+											)}
+
+											{chainLogo && (
+												<div className="chain-logo">{chainLogo}</div>
 											)}
 										</div>
 
 										<div className="min-w-0 flex-1">
 											<div className="flex items-center justify-between">
-												<h3 className="font-semibold text-sm">
-													{item.balance}{" "}
-													<span className="text-muted-foreground">
-														{item.symbol}
-													</span>
-												</h3>
+												<div>
+													<div className="text-muted-foreground text-xs">
+														Balance:
+													</div>
+													<h3 className="font-semibold text-sm">
+														{item.balance}{" "}
+														<span className="text-muted-foreground">
+															{item.symbol}
+														</span>
+													</h3>
+												</div>
 												<span className="text-right font-medium text-muted-foreground text-sm">
 													{getNetworkName(item.chainId)}
 												</span>
@@ -242,24 +256,26 @@ export default function ListTokens() {
 			</RadioGroup>
 
 			{/* Floating bottom confirmation container */}
-			{selectedTokenPriority && (
-				<div className="-translate-x-1/2 slide-in-from-bottom-4 fixed bottom-6 left-1/2 z-50 transform animate-in duration-300">
-					<Card className="border-2 border-primary/20 bg-background/95 shadow-2xl backdrop-blur-sm">
-						<CardContent className="flex items-center gap-4 p-4">
+			{selectedTokenPriority && selectedToken && (
+				<div className="-translate-x-1/2 slide-in-from-bottom-4 fixed bottom-6 left-1/2 z-[60] w-full max-w-md transform animate-in px-4 duration-300">
+					<Card className="border-2 border-primary/20 bg-background/70 shadow-2xl backdrop-blur-sm">
+						<CardContent className="flex items-center gap-3 p-3">
 							<div className="flex min-w-0 flex-1 items-center gap-3">
-								<div className="flex-shrink-0">
-									<CircleCheck className="h-5 w-5 text-primary" />
-								</div>
 								<div className="min-w-0 flex-1">
-									<p className="truncate font-semibold text-sm">
-										{selectedToken?.name} (
-										{getNetworkName(selectedToken?.chainId ?? 0)})
-									</p>
 									<p className="text-muted-foreground text-xs">
 										Payment token selected
 									</p>
+									<p className="truncate font-semibold text-sm">
+										{selectedToken.name} (
+										{getNetworkName(selectedToken.chainId)})
+									</p>
 								</div>
 							</div>
+
+							<Button variant="default" size="sm">
+								Set as priority
+							</Button>
+
 							<Button
 								variant="ghost"
 								size="sm"
