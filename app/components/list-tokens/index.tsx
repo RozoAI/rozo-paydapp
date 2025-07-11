@@ -3,14 +3,17 @@ import type {
 	TokenMetadataResponse,
 	TokenPriceByAddressResult,
 } from "alchemy-sdk";
-import { Check, Loader2, Sparkle, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, Loader2, RefreshCcw, Sparkle, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { type Address, formatUnits, getAddress, hexToBigInt } from "viem";
 import { useAccount } from "wagmi";
 import { alchemy } from "~/alchemy";
 import { getNetworkName, knownAlchemyTokens, knownTokens } from "~/lib/tokens";
 import { chainToLogo } from "../icons/chains";
+import PrioritySuccessModal, {
+	PrioritySuccessModalRef,
+} from "../priority-success-modal";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
@@ -39,6 +42,8 @@ export default function ListTokens() {
 	const [isError, setIsError] = useState(false);
 	const [selectedTokenPriority, setSelectedTokenPriority] = useState("");
 	const [tokenPriority, setTokenPriority] = useState<TokenBalance | null>(null);
+
+	const prioritySuccessModalRef = useRef<PrioritySuccessModalRef>(null);
 
 	const { isConnected, address } = useAccount();
 
@@ -150,11 +155,10 @@ export default function ListTokens() {
 	}, [isConnected, address, fetchTokenBalances]);
 
 	const handleSetTokenPriority = useCallback(() => {
-		console.log("set token priority", selectedToken);
-
 		if (selectedToken) {
 			setTokenPriority(selectedToken);
 			setSelectedTokenPriority("");
+			prioritySuccessModalRef.current?.show();
 		}
 	}, [selectedToken]);
 
@@ -186,7 +190,14 @@ export default function ListTokens() {
 	return (
 		<div className="mt-8 flex w-full flex-col gap-3">
 			<div className="mb-4">
-				<h2 className="mb-2 font-bold text-2xl">Choose your token priority</h2>
+				<div className="flex items-start justify-between">
+					<h2 className="mb-2 font-bold text-2xl">
+						Choose your token priority
+					</h2>
+					<Button variant="link" size="icon" onClick={handleRetry}>
+						<RefreshCcw className="size-4" />
+					</Button>
+				</div>
 				<p className="text-muted-foreground">
 					Choose your preferred payment token. It will be used as default for
 					all transactions.
@@ -324,9 +335,10 @@ export default function ListTokens() {
 				</div>
 			)}
 
-			{/* <div className="flex flex-col gap-3">
-				{tokenBalances.map(renderTokenItem)}
-			</div> */}
+			<PrioritySuccessModal
+				ref={prioritySuccessModalRef}
+				tokenPriority={tokenPriority}
+			/>
 		</div>
 	);
 }

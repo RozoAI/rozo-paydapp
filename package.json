@@ -11,6 +11,7 @@
 		"prepare": "lefthook install"
 	},
 	"dependencies": {
+		"@lottiefiles/dotlottie-react": "^0.14.3",
 		"@radix-ui/react-avatar": "^1.1.10",
 		"@radix-ui/react-dialog": "^1.1.14",
 		"@radix-ui/react-label": "^2.1.7",
@@ -28,6 +29,7 @@
 		"ethers": "^6.15.0",
 		"isbot": "^5.1.28",
 		"js-cookie": "^3.0.5",
+		"lottie-react": "^2.4.1",
 		"lucide-react": "^0.525.0",
 		"next-themes": "^0.4.6",
 		"radix-ui": "^1.4.2",
