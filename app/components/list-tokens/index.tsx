@@ -12,7 +12,7 @@ import { alchemy } from "~/alchemy";
 import { getNetworkName, knownAlchemyTokens, knownTokens } from "~/lib/tokens";
 import { chainToLogo } from "../icons/chains";
 import PrioritySuccessModal, {
-	PrioritySuccessModalRef,
+	type PrioritySuccessModalRef,
 } from "../priority-success-modal";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";

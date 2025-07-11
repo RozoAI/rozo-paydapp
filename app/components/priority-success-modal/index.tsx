@@ -69,8 +69,12 @@ const PrioritySuccessModal = forwardRef<
 					)}
 				</div>
 
-				<DialogFooter>
-					<Button variant="outline" onClick={() => setIsOpen(false)}>
+				<DialogFooter className="flex justify-center">
+					<Button
+						variant="outline"
+						onClick={() => setIsOpen(false)}
+						className="w-full"
+					>
 						Close
 					</Button>
 				</DialogFooter>
