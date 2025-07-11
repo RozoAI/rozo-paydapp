@@ -3,7 +3,7 @@ import type {
 	TokenMetadataResponse,
 	TokenPriceByAddressResult,
 } from "alchemy-sdk";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Loader2, Sparkle, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { type Address, formatUnits, getAddress, hexToBigInt } from "viem";
@@ -38,6 +38,7 @@ export default function ListTokens() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [isError, setIsError] = useState(false);
 	const [selectedTokenPriority, setSelectedTokenPriority] = useState("");
+	const [tokenPriority, setTokenPriority] = useState<TokenBalance | null>(null);
 
 	const { isConnected, address } = useAccount();
 
@@ -57,8 +58,21 @@ export default function ListTokens() {
 	}, [tokenBalances, selectedTokenPriority]);
 
 	const filteredTokenBalances = useMemo(() => {
-		return tokenBalances.filter((token) => token.balance > 0);
-	}, [tokenBalances]);
+		const filtered = tokenBalances.filter((token) => token.balance > 0);
+
+		if (tokenPriority) {
+			// Move priority token to the top
+			const priorityIndex = filtered.findIndex(
+				(token) => token.id === tokenPriority.id,
+			);
+			if (priorityIndex > 0) {
+				const [priorityToken] = filtered.splice(priorityIndex, 1);
+				filtered.unshift(priorityToken);
+			}
+		}
+
+		return filtered;
+	}, [tokenBalances, tokenPriority]);
 
 	const fetchTokenBalances = useCallback(
 		async (walletAddress: Address) => {
@@ -135,6 +149,15 @@ export default function ListTokens() {
 		fetchTokenBalances(address);
 	}, [isConnected, address, fetchTokenBalances]);
 
+	const handleSetTokenPriority = useCallback(() => {
+		console.log("set token priority", selectedToken);
+
+		if (selectedToken) {
+			setTokenPriority(selectedToken);
+			setSelectedTokenPriority("");
+		}
+	}, [selectedToken]);
+
 	const handleRetry = useCallback(() => {
 		if (address) {
 			fetchTokenBalances(address);
@@ -181,7 +204,14 @@ export default function ListTokens() {
 					const chainLogo = chainToLogo[item.chainId];
 
 					return (
-						<div key={item.id}>
+						<div key={item.id} className="relative">
+							{tokenPriority && tokenPriority.id === item.id && (
+								<div className="-top-2 absolute right-0 flex h-auto w-auto items-center gap-1 rounded-md bg-accent-foreground px-2 py-1">
+									<Sparkle className="size-3 text-accent" />
+									<p className="text-accent text-xs">Priority</p>
+								</div>
+							)}
+
 							<RadioGroupItem
 								value={item.id}
 								id={item.id}
@@ -272,7 +302,11 @@ export default function ListTokens() {
 								</div>
 							</div>
 
-							<Button variant="default" size="sm">
+							<Button
+								variant="default"
+								size="sm"
+								onClick={handleSetTokenPriority}
+							>
 								Set as priority
 							</Button>
 
