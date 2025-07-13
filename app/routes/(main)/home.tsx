@@ -5,11 +5,13 @@ import ConnectWalletButton from "~/components/connect-wallet-button";
 import ListTokens from "~/components/list-tokens";
 import { Avatar, AvatarImage } from "~/components/ui/avatar";
 import { CardContent } from "~/components/ui/card";
+import { useAuth } from "~/providers/auth-provider";
 
 export default function Home() {
 	const [theme] = useTheme();
 
-	const { isConnected, address } = useAccount();
+	const { address } = useAccount();
+	const { isConnected } = useAuth();
 
 	return (
 		<BoxedCard>

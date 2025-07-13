@@ -5,5 +5,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const session = await signSessionStorage.getSession(
 		request.headers.get("Cookie"),
 	);
-	return Response.json({ signature: session.get("signature") });
+
+	const signature = session.get("signature");
+
+	if (!signature) {
+		// If no signature in session, return empty response
+		return Response.json({ signature: null });
+	}
+
+	return Response.json({ signature });
 }

@@ -8,22 +8,29 @@ interface User {
 	signature: string;
 }
 
+interface LoginProps {
+	signature: string;
+	message: string;
+	tokens?: any[] | null;
+	walletapp: string;
+}
+
 interface AuthContextType {
 	user: User | null;
 	isLoading: boolean;
 	isConnected: boolean;
-	login: (signature: string) => Promise<void>;
+	// login: (signature: string, message: string, tokens: string[], walletapp: string) => Promise<void>;
 	logout: () => void;
-	signMessage: (signature: string) => Promise<void>;
+	login: (props: LoginProps) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
 	user: null,
 	isLoading: false,
 	isConnected: false,
-	login: async () => {},
+	// login: async () => {},
 	logout: () => {},
-	signMessage: async () => {},
+	login: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -32,36 +39,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const { address, isConnected } = useAccount();
 
 	useEffect(() => {
-		// Check for existing session on mount
 		const checkSession = async () => {
 			try {
-				// First check local storage
 				const savedUser = localStorage.getItem("user");
 				if (savedUser) {
-					setUser(JSON.parse(savedUser));
-				}
-
-				// Then verify with server session
-				const response = await fetch("/api/get-sign");
-				const data = await response.json();
-
-				if (data.signature) {
-					// If there's a server session but no local storage, restore from server
-					if (!savedUser && address) {
-						const userData: User = {
-							address,
-							signature: data.signature,
-						};
-						setUser(userData);
-						localStorage.setItem("user", JSON.stringify(userData));
-					}
+					const parsedUser = JSON.parse(savedUser);
+					setUser(parsedUser);
 				} else {
-					// If no server session, clear local storage
 					setUser(null);
 					localStorage.removeItem("user");
 				}
 			} catch (error) {
 				console.error("Failed to restore session:", error);
+				setUser(null);
+				localStorage.removeItem("user");
 			} finally {
 				setIsLoading(false);
 			}
@@ -77,7 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		}
 	}, [isConnected]);
 
-	const login = async (signature: string) => {
+	const login = async ({
+		signature,
+		message,
+		tokens,
+		walletapp,
+	}: LoginProps) => {
 		if (!address) return;
 
 		setIsLoading(true);
@@ -87,19 +83,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				signature,
 			};
 
-			// Call the API to set signature in session
-			const response = await fetch("/api/set-sign", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/preferences`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						address,
+						message,
+						signature,
+						// @TODO: always empty when login
+						preferred_tokens: tokens || [],
+						walletapp: walletapp,
+					}),
 				},
-				body: JSON.stringify({ signature }),
-			});
+			);
 
 			if (!response.ok) {
 				throw new Error("Failed to set signature");
 			}
-
+			console.log({ userData });
 			setUser(userData);
 			localStorage.setItem("user", JSON.stringify(userData));
 		} catch (error) {
@@ -107,17 +112,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			throw error;
 		} finally {
 			setIsLoading(false);
-		}
-	};
-
-	const signMessage = async (signature: string) => {
-		if (!address) return;
-
-		try {
-			await login(signature);
-		} catch (error) {
-			console.error("Sign message failed:", error);
-			throw error;
 		}
 	};
 
@@ -131,10 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			value={{
 				user,
 				isLoading,
-				isConnected,
-				login,
+				isConnected: !!user,
+				// login,
 				logout,
-				signMessage,
+				login,
 			}}
 		>
 			{children}

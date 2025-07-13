@@ -9,7 +9,9 @@ import { toast } from "sonner";
 import { type Address, formatUnits, getAddress, hexToBigInt } from "viem";
 import { useAccount } from "wagmi";
 import { alchemy } from "~/alchemy";
+import { usePreferences } from "~/hooks/use-preferences";
 import { getNetworkName, knownAlchemyTokens, knownTokens } from "~/lib/tokens";
+import { useAuth } from "~/providers/auth-provider";
 import { chainToLogo } from "../icons/chains";
 import PrioritySuccessModal, {
 	type PrioritySuccessModalRef,
@@ -38,16 +40,17 @@ type TokenBalance = {
 
 export default function ListTokens() {
 	const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
-	const [isLoading, setIsLoading] = useState(false);
+	const [isFetching, setIsFetching] = useState(false);
 	const [isError, setIsError] = useState(false);
 	const [selectedTokenPriority, setSelectedTokenPriority] = useState("");
-	const [tokenPriority, setTokenPriority] = useState<TokenBalance | null>(null);
 
 	const prioritySuccessModalRef = useRef<PrioritySuccessModalRef>(null);
 
-	const { isConnected, address } = useAccount();
+	const { address } = useAccount();
+	const { isConnected } = useAuth();
+	const { preferences, isLoading, setPreferredTokens, refetchPreferences } =
+		usePreferences();
 
-	// Memoize known token data to avoid recalculations
 	const { knownTokenNetworks, tokenMap } = useMemo(() => {
 		const networks = new Set(knownAlchemyTokens.map((t) => t.alchemyNetwork));
 		const map = new Map(knownTokens.map((token) => [token.token, token]));
@@ -61,6 +64,20 @@ export default function ListTokens() {
 	const selectedToken = useMemo(() => {
 		return tokenBalances.find((token) => token.id === selectedTokenPriority);
 	}, [tokenBalances, selectedTokenPriority]);
+
+	// Find the priority token from preferences
+	const tokenPriority = useMemo(() => {
+		if (!preferences?.preferred_tokens?.length) return null;
+
+		const priorityToken = preferences.preferred_tokens[0];
+		return (
+			tokenBalances.find(
+				(token) =>
+					token.chainId === priorityToken.chain &&
+					token.address === priorityToken.address,
+			) || null
+		);
+	}, [preferences, tokenBalances]);
 
 	const filteredTokenBalances = useMemo(() => {
 		const filtered = tokenBalances.filter((token) => token.balance > 0);
@@ -79,96 +96,105 @@ export default function ListTokens() {
 		return filtered;
 	}, [tokenBalances, tokenPriority]);
 
-	const fetchTokenBalances = useCallback(
-		async (walletAddress: Address) => {
-			try {
-				setIsLoading(true);
-				setIsError(false);
+	const fetchTokenBalances = async (walletAddress: Address) => {
+		try {
+			setIsFetching(true);
+			setIsError(false);
 
-				const response = await alchemy.portfolio.getTokensByWallet([
-					{
-						address: walletAddress,
-						networks: knownTokenNetworks,
-					},
-				]);
+			const response = await alchemy.portfolio.getTokensByWallet([
+				{
+					address: walletAddress,
+					networks: knownTokenNetworks,
+				},
+			]);
 
-				const processedTokens = (response.data.tokens as TokenBalance[])
-					.map((item) => {
-						if (!item.tokenAddress) return null;
+			const processedTokens = (response.data.tokens as TokenBalance[])
+				.map((item) => {
+					if (!item.tokenAddress) return null;
 
-						const tokenAddress = getAddress(item.tokenAddress);
-						const knownToken = tokenMap.get(tokenAddress);
+					const tokenAddress = getAddress(item.tokenAddress);
+					const knownToken = tokenMap.get(tokenAddress);
 
-						if (!knownToken) return null;
+					if (!knownToken) return null;
 
-						const balanceBigInt = hexToBigInt(
-							item.tokenBalance as `0x${string}`,
-						);
-						const decimals =
-							item.tokenMetadata?.decimals ?? knownToken.decimals ?? 18;
-						const formattedBalance = formatUnits(balanceBigInt, decimals);
+					const balanceBigInt = hexToBigInt(item.tokenBalance as `0x${string}`);
+					const decimals =
+						item.tokenMetadata?.decimals ?? knownToken.decimals ?? 18;
+					const formattedBalance = formatUnits(balanceBigInt, decimals);
 
-						return {
-							...item,
-							id: `${item.tokenAddress}-${knownToken.chainId}`,
-							symbol: knownToken.symbol,
-							name: knownToken.name,
-							chainId: knownToken.chainId,
-							balance: Number.parseFloat(
-								Number.parseFloat(formattedBalance).toFixed(
-									knownToken.decimals === 18 ? 5 : 2,
-								),
+					return {
+						...item,
+						id: `${item.tokenAddress}-${knownToken.chainId}`,
+						symbol: knownToken.symbol,
+						name: knownToken.name,
+						chainId: knownToken.chainId,
+						balance: Number.parseFloat(
+							Number.parseFloat(formattedBalance).toFixed(
+								knownToken.decimals === 18 ? 5 : 2,
 							),
-							logoURI: knownToken.logoURI,
-							network: knownToken.chainId as unknown as Network,
-						};
-					})
-					.filter(Boolean)
-					.sort((a, b) => {
-						const balanceA = a?.balance || 0;
-						const balanceB = b?.balance || 0;
-						return balanceB - balanceA;
-					}) as TokenBalance[];
+						),
+						logoURI: knownToken.logoURI,
+						network: knownToken.chainId as unknown as Network,
+					};
+				})
+				.filter(Boolean)
+				.sort((a, b) => {
+					const balanceA = a?.balance || 0;
+					const balanceB = b?.balance || 0;
+					return balanceB - balanceA;
+				}) as TokenBalance[];
 
-				setTokenBalances(processedTokens);
-			} catch (error) {
-				console.error("Failed to fetch token balances:", error);
-				setIsError(true);
-				toast.error("Failed to fetch token balances");
-			} finally {
-				setIsLoading(false);
-			}
-		},
-		[knownTokenNetworks, tokenMap],
-	);
+			setTokenBalances(processedTokens);
+		} catch (error) {
+			console.error("Failed to fetch token balances:", error);
+			setIsError(true);
+			toast.error("Failed to fetch token balances");
+		} finally {
+			setIsFetching(false);
+		}
+	};
 
 	// Reset state when wallet disconnects
 	useEffect(() => {
 		if (!isConnected || !address) {
 			setTokenBalances([]);
-			setIsLoading(false);
+			setIsFetching(false);
 			setIsError(false);
 			return;
 		}
 
 		fetchTokenBalances(address);
-	}, [isConnected, address, fetchTokenBalances]);
+	}, [isConnected, address, knownTokenNetworks, tokenMap]);
 
-	const handleSetTokenPriority = useCallback(() => {
-		if (selectedToken) {
-			setTokenPriority(selectedToken);
+	const handleSetTokenPriority = useCallback(async () => {
+		if (!selectedToken) return;
+
+		try {
+			await setPreferredTokens([
+				{
+					chain: selectedToken.chainId,
+					address: selectedToken.address,
+				},
+			]);
+
+			// Refetch preferences to update the priority indicator
+			await refetchPreferences();
+
 			setSelectedTokenPriority("");
 			prioritySuccessModalRef.current?.show();
+		} catch (error) {
+			// Error handling is already done in the hook
+			console.error("Error setting token priority:", error);
 		}
-	}, [selectedToken]);
+	}, [selectedToken, setPreferredTokens, refetchPreferences]);
 
-	const handleRetry = useCallback(() => {
+	const handleRetry = () => {
 		if (address) {
 			fetchTokenBalances(address);
 		}
-	}, [address, fetchTokenBalances]);
+	};
 
-	if (isLoading) {
+	if (isFetching) {
 		return <Loader2 className="mt-6 size-8 animate-spin" />;
 	}
 
@@ -317,7 +343,9 @@ export default function ListTokens() {
 								variant="default"
 								size="sm"
 								onClick={handleSetTokenPriority}
+								disabled={isLoading}
 							>
+								{isLoading && <Loader2 className="size-4 animate-spin" />}
 								Set as priority
 							</Button>
 
@@ -327,6 +355,7 @@ export default function ListTokens() {
 								onClick={() => setSelectedTokenPriority("")}
 								className="h-8 w-8 flex-shrink-0 p-0 transition-colors hover:bg-destructive/10 hover:text-destructive"
 								aria-label="Clear selection"
+								disabled={isLoading}
 							>
 								<X className="h-4 w-4" />
 							</Button>

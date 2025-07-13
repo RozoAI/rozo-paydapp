@@ -3,6 +3,7 @@ import { Copy, Loader2, Settings, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAccount, useDisconnect, useSignMessage } from "wagmi";
+import { usePreferences } from "~/hooks/use-preferences";
 import { useAuth } from "~/providers/auth-provider";
 import { Button } from "../ui/button";
 
@@ -12,22 +13,37 @@ export default function ConnectWalletButton() {
 	const { disconnect } = useDisconnect();
 
 	const { signMessageAsync } = useSignMessage();
-	const { signMessage } = useAuth();
-
+	const { login } = useAuth();
+	const { preferences, refetchPreferences } = usePreferences();
+	console.log({ preferences });
 	const [_isLoading, setIsLoading] = useState<boolean>(false);
 	const [firstLoad, setFirstLoad] = useState<boolean>(false);
 
 	const generateSign = async () => {
 		setIsLoading(true);
 		try {
-			const timestamp = Date.now();
-			const message = `RozoPayDAppLogin:${timestamp}`;
+			const timestamp = new Date().toISOString();
+			const message = `Set address preference for ${address} at ${timestamp}`;
 
 			const signature = await signMessageAsync({ message });
-			await signMessage(signature);
+
+			const walletApp = localStorage.getItem("wagmi.recentConnectorId");
+
+			// First fetch existing preferences
+			await refetchPreferences();
+
+			// Then login with the fetched preferences
+			await login({
+				signature,
+				message,
+				tokens: preferences?.preferred_tokens || [],
+				walletapp: walletApp?.replace(/"/g, "") || "",
+			});
 
 			setIsLoading(false);
 		} catch (_error: any) {
+			toast.error(_error.message);
+			disconnect();
 			setIsLoading(false);
 		}
 	};
@@ -37,7 +53,7 @@ export default function ConnectWalletButton() {
 			disconnect();
 			setFirstLoad(false);
 		} else if (status === "connected" && isConnected && firstLoad) {
-			// generateSign();
+			generateSign();
 		}
 	}, [status, isConnected, firstLoad, disconnect]);
 
