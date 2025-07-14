@@ -4,7 +4,7 @@ import type {
 	TokenPriceByAddressResult,
 } from "alchemy-sdk";
 import { Check, Loader2, RefreshCcw, Sparkle, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { type Address, formatUnits, getAddress, hexToBigInt } from "viem";
 import { useAccount } from "wagmi";
@@ -174,7 +174,7 @@ export default function ListTokens() {
 		});
 	}, [isConnected, address]);
 
-	const handleSetTokenPriority = useCallback(async () => {
+	const handleSetTokenPriority = async () => {
 		if (!selectedToken) return;
 
 		try {
@@ -194,7 +194,7 @@ export default function ListTokens() {
 			// Error handling is already done in the hook
 			console.error("Error setting token priority:", error);
 		}
-	}, [selectedToken, setPreferredTokens, refetchPreferences]);
+	};
 
 	const handleRetry = () => {
 		if (address) {

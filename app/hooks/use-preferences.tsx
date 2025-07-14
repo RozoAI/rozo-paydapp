@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAccount, useSignMessage } from "wagmi";
 import { useAuth } from "~/providers/auth-provider";
@@ -26,10 +26,17 @@ export function usePreferences() {
 	const { user } = useAuth();
 	const { signMessageAsync } = useSignMessage();
 
+	// Add ref to track fetch state
+	const isFetchingRef = useRef(false);
+
 	const fetchPreferences = useCallback(async () => {
 		if (!address) return;
 
+		// Prevent double calls
+		if (isFetchingRef.current) return;
+
 		try {
+			isFetchingRef.current = true;
 			const response = await fetch(
 				`${import.meta.env.VITE_API_URL}/preferences/${address}`,
 			);
@@ -45,6 +52,8 @@ export function usePreferences() {
 			toast.error(
 				error instanceof Error ? error.message : "Failed to fetch preferences",
 			);
+		} finally {
+			isFetchingRef.current = false;
 		}
 	}, [address]);
 
@@ -103,6 +112,7 @@ export function usePreferences() {
 			fetchPreferences();
 		} else {
 			setPreferences(null);
+			isFetchingRef.current = false; // Reset ref when no address
 		}
 	}, [address, fetchPreferences]);
 
