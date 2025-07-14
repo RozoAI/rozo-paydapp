@@ -5,30 +5,20 @@ import { useAccount } from "wagmi";
 
 interface User {
 	address: string;
-	signature: string;
-}
-
-interface LoginProps {
-	signature: string;
-	message: string;
-	tokens?: any[] | null;
-	walletapp: string;
 }
 
 interface AuthContextType {
 	user: User | null;
 	isLoading: boolean;
 	isConnected: boolean;
-	// login: (signature: string, message: string, tokens: string[], walletapp: string) => Promise<void>;
 	logout: () => void;
-	login: (props: LoginProps) => Promise<void>;
+	login: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
 	user: null,
 	isLoading: false,
 	isConnected: false,
-	// login: async () => {},
 	logout: () => {},
 	login: async () => {},
 });
@@ -68,43 +58,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		}
 	}, [isConnected]);
 
-	const login = async ({
-		signature,
-		message,
-		tokens,
-		walletapp,
-	}: LoginProps) => {
+	const login = async () => {
 		if (!address) return;
 
 		setIsLoading(true);
 		try {
 			const userData: User = {
 				address,
-				signature,
 			};
 
-			const response = await fetch(
-				`${import.meta.env.VITE_API_URL}/preferences`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						address,
-						message,
-						signature,
-						// @TODO: always empty when login
-						preferred_tokens: tokens || [],
-						walletapp: walletapp,
-					}),
-				},
-			);
-
-			if (!response.ok) {
-				throw new Error("Failed to set signature");
-			}
-			console.log({ userData });
 			setUser(userData);
 			localStorage.setItem("user", JSON.stringify(userData));
 		} catch (error) {
@@ -125,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			value={{
 				user,
 				isLoading,
-				isConnected: !!user,
+				isConnected: !!user && isConnected,
 				// login,
 				logout,
 				login,

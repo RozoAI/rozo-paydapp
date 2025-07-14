@@ -2,8 +2,7 @@ import { ConnectButton, useConnectModal } from "@rainbow-me/rainbowkit";
 import { Copy, Loader2, Settings, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useAccount, useDisconnect, useSignMessage } from "wagmi";
-import { usePreferences } from "~/hooks/use-preferences";
+import { useAccount, useDisconnect } from "wagmi";
 import { useAuth } from "~/providers/auth-provider";
 import { Button } from "../ui/button";
 
@@ -12,33 +11,15 @@ export default function ConnectWalletButton() {
 	const { isConnected, status, isConnecting, address } = useAccount();
 	const { disconnect } = useDisconnect();
 
-	const { signMessageAsync } = useSignMessage();
 	const { login } = useAuth();
-	const { preferences, refetchPreferences } = usePreferences();
-	console.log({ preferences });
+
 	const [_isLoading, setIsLoading] = useState<boolean>(false);
 	const [firstLoad, setFirstLoad] = useState<boolean>(false);
 
 	const generateSign = async () => {
 		setIsLoading(true);
 		try {
-			const timestamp = new Date().toISOString();
-			const message = `Set address preference for ${address} at ${timestamp}`;
-
-			const signature = await signMessageAsync({ message });
-
-			const walletApp = localStorage.getItem("wagmi.recentConnectorId");
-
-			// First fetch existing preferences
-			await refetchPreferences();
-
-			// Then login with the fetched preferences
-			await login({
-				signature,
-				message,
-				tokens: preferences?.preferred_tokens || [],
-				walletapp: walletApp?.replace(/"/g, "") || "",
-			});
+			await login();
 
 			setIsLoading(false);
 		} catch (_error: any) {
