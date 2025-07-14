@@ -154,16 +154,24 @@ export default function ListTokens() {
 		}
 	};
 
-	// Reset state when wallet disconnects
+	const isFetchingRef = useRef(false);
+
 	useEffect(() => {
 		if (!isConnected || !address) {
 			setTokenBalances([]);
 			setIsFetching(false);
 			setIsError(false);
+			isFetchingRef.current = false;
 			return;
 		}
 
-		fetchTokenBalances(address);
+		// Prevent double calls
+		if (isFetchingRef.current) return;
+
+		isFetchingRef.current = true;
+		fetchTokenBalances(address).finally(() => {
+			isFetchingRef.current = false;
+		});
 	}, [isConnected, address]);
 
 	const handleSetTokenPriority = useCallback(async () => {
