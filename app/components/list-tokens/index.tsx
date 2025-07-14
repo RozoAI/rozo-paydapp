@@ -164,7 +164,7 @@ export default function ListTokens() {
 		}
 
 		fetchTokenBalances(address);
-	}, [isConnected, address, knownTokenNetworks, tokenMap]);
+	}, [isConnected, address]);
 
 	const handleSetTokenPriority = useCallback(async () => {
 		if (!selectedToken) return;
@@ -194,10 +194,6 @@ export default function ListTokens() {
 		}
 	};
 
-	if (isFetching) {
-		return <Loader2 className="mt-6 size-8 animate-spin" />;
-	}
-
 	if (isError) {
 		return (
 			<div className="mt-6 flex flex-col items-center gap-2">
@@ -209,7 +205,7 @@ export default function ListTokens() {
 		);
 	}
 
-	if (!isConnected || !address || tokenBalances.length === 0) {
+	if (!isConnected || !address) {
 		return null;
 	}
 
@@ -220,9 +216,19 @@ export default function ListTokens() {
 					<h2 className="mb-2 font-bold text-2xl">
 						Choose your token priority
 					</h2>
-					<Button variant="link" size="icon" onClick={handleRetry}>
-						<RefreshCcw className="size-4" />
-					</Button>
+					<div className="flex items-center gap-2">
+						<a
+							href="https://docs.google.com/document/d/1X9gncap8UKGq57WaapPY_TtYPx5zY87nqnZkm5D8iN8/edit?tab=t.0"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-muted-foreground text-sm hover:text-primary hover:underline"
+						>
+							T&C
+						</a>
+						<Button variant="link" size="icon" onClick={handleRetry}>
+							<RefreshCcw className="size-4" />
+						</Button>
+					</div>
 				</div>
 				<p className="text-muted-foreground">
 					Choose your preferred payment token. It will be used as default for
@@ -230,138 +236,160 @@ export default function ListTokens() {
 				</p>
 			</div>
 
-			<RadioGroup
-				value={selectedTokenPriority}
-				onValueChange={setSelectedTokenPriority}
-				className="grid gap-4"
-			>
-				{filteredTokenBalances.map((item) => {
-					const logo = item.logoURI;
-					const isSelected = selectedTokenPriority === item.id;
-					const chainLogo = chainToLogo[item.chainId];
+			{isFetching && (
+				<div className="flex items-center justify-center">
+					<Loader2 className="size-6 animate-spin" />
+				</div>
+			)}
 
-					return (
-						<div key={item.id} className="relative">
-							{tokenPriority && tokenPriority.id === item.id && (
-								<div className="-top-2 absolute right-0 flex h-auto w-auto items-center gap-1 rounded-md bg-accent-foreground px-2 py-1">
-									<Sparkle className="size-3 text-accent" />
-									<p className="text-accent text-xs">Priority</p>
-								</div>
-							)}
+			{!isFetching && filteredTokenBalances.length === 0 && (
+				<div className="flex items-center justify-center">
+					<p className="text-muted-foreground">No tokens found</p>
+				</div>
+			)}
 
-							<RadioGroupItem
-								value={item.id}
-								id={item.id}
-								className="sr-only"
-							/>
+			{!isFetching && filteredTokenBalances.length > 0 && (
+				<>
+					<RadioGroup
+						value={selectedTokenPriority}
+						onValueChange={setSelectedTokenPriority}
+						className="grid gap-4"
+					>
+						{filteredTokenBalances.map((item) => {
+							const logo = item.logoURI;
+							const isSelected = selectedTokenPriority === item.id;
+							const chainLogo = chainToLogo[item.chainId];
 
-							<Label
-								htmlFor={item.id}
-								className="w-full cursor-pointer"
-								onClick={() => {
-									if (selectedTokenPriority === item.id) {
-										setSelectedTokenPriority("");
-									} else {
-										setSelectedTokenPriority(item.id);
-									}
-								}}
-							>
-								<Card
-									className={`w-full transition-all duration-200 hover:shadow-md ${
-										isSelected
-											? "border-primary bg-primary/5 ring-2 ring-primary"
-											: "hover:border-primary/50"
-									}`}
-								>
-									<CardContent className="flex items-center gap-3 p-3">
-										<div className={"relative flex-shrink-0 rounded-lg p-1.5"}>
-											{logo && (
-												<img src={logo} alt={item.name} className="size-10" />
-											)}
-
-											{chainLogo && (
-												<div className="chain-logo">{chainLogo}</div>
-											)}
+							return (
+								<div key={item.id} className="relative">
+									{tokenPriority && tokenPriority.id === item.id && (
+										<div className="-top-2 absolute right-0 flex h-auto w-auto items-center gap-1 rounded-md bg-accent-foreground px-2 py-1">
+											<Sparkle className="size-3 text-accent" />
+											<p className="text-accent text-xs">Priority</p>
 										</div>
+									)}
 
-										<div className="min-w-0 flex-1">
-											<div className="flex items-center justify-between">
-												<div>
-													<div className="text-muted-foreground text-xs">
-														Balance:
-													</div>
-													<h3 className="font-semibold text-sm">
-														{item.balance}{" "}
-														<span className="text-muted-foreground">
-															{item.symbol}
-														</span>
-													</h3>
-												</div>
-												<span className="text-right font-medium text-muted-foreground text-sm">
-													{getNetworkName(item.chainId)}
-												</span>
-											</div>
-										</div>
+									<RadioGroupItem
+										value={item.id}
+										id={item.id}
+										className="sr-only"
+									/>
 
-										<div
-											className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+									<Label
+										htmlFor={item.id}
+										className="w-full cursor-pointer"
+										onClick={() => {
+											if (selectedTokenPriority === item.id) {
+												setSelectedTokenPriority("");
+											} else {
+												setSelectedTokenPriority(item.id);
+											}
+										}}
+									>
+										<Card
+											className={`w-full transition-all duration-200 hover:shadow-md ${
 												isSelected
-													? "border-primary bg-primary"
-													: "border-muted-foreground/30"
+													? "border-primary bg-primary/5 ring-2 ring-primary"
+													: "hover:border-primary/50"
 											}`}
 										>
-											{isSelected && (
-												<Check className="h-3 w-3 text-primary-foreground" />
-											)}
-										</div>
-									</CardContent>
-								</Card>
-							</Label>
-						</div>
-					);
-				})}
-			</RadioGroup>
+											<CardContent className="flex items-center gap-3 p-3">
+												<div
+													className={"relative flex-shrink-0 rounded-lg p-1.5"}
+												>
+													{logo && (
+														<img
+															src={logo}
+															alt={item.name}
+															className="size-10"
+														/>
+													)}
 
-			{/* Floating bottom confirmation container */}
-			{selectedTokenPriority && selectedToken && (
-				<div className="-translate-x-1/2 slide-in-from-bottom-4 fixed bottom-6 left-1/2 z-[60] w-full max-w-md transform animate-in px-4 duration-300">
-					<Card className="border-2 border-primary/20 bg-background/70 shadow-2xl backdrop-blur-sm">
-						<CardContent className="flex items-center gap-3 p-3">
-							<div className="flex min-w-0 flex-1 items-center gap-3">
-								<div className="min-w-0 flex-1">
-									<p className="text-muted-foreground text-xs">
-										Payment token selected
-									</p>
-									<p className="truncate font-semibold text-sm">
-										{selectedToken.name} (
-										{getNetworkName(selectedToken.chainId)})
-									</p>
+													{chainLogo && (
+														<div className="chain-logo">{chainLogo}</div>
+													)}
+												</div>
+
+												<div className="min-w-0 flex-1">
+													<div className="flex items-center justify-between">
+														<div>
+															<div className="text-muted-foreground text-xs">
+																Balance:
+															</div>
+															<h3 className="font-semibold text-sm">
+																{item.balance}{" "}
+																<span className="text-muted-foreground">
+																	{item.symbol}
+																</span>
+															</h3>
+														</div>
+														<span className="text-right font-medium text-muted-foreground text-sm">
+															{getNetworkName(item.chainId)}
+														</span>
+													</div>
+												</div>
+
+												<div
+													className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+														isSelected
+															? "border-primary bg-primary"
+															: "border-muted-foreground/30"
+													}`}
+												>
+													{isSelected && (
+														<Check className="h-3 w-3 text-primary-foreground" />
+													)}
+												</div>
+											</CardContent>
+										</Card>
+									</Label>
 								</div>
-							</div>
+							);
+						})}
+					</RadioGroup>
 
-							<Button
-								variant="default"
-								size="sm"
-								onClick={handleSetTokenPriority}
-								disabled={isLoading}
-							>
-								{isLoading && <Loader2 className="size-4 animate-spin" />}
-								Set as priority
-							</Button>
+					{/* Floating bottom confirmation container */}
+					{selectedTokenPriority && selectedToken && (
+						<div className="-translate-x-1/2 slide-in-from-bottom-4 fixed bottom-6 left-1/2 z-[60] w-full max-w-md transform animate-in px-4 duration-300">
+							<Card className="border-2 border-primary/20 bg-background/70 shadow-2xl backdrop-blur-sm">
+								<CardContent className="flex items-center gap-3 p-3">
+									<div className="flex min-w-0 flex-1 items-center gap-3">
+										<div className="min-w-0 flex-1">
+											<p className="text-muted-foreground text-xs">
+												Payment token selected
+											</p>
+											<p className="truncate font-semibold text-sm">
+												{selectedToken.name} (
+												{getNetworkName(selectedToken.chainId)})
+											</p>
+										</div>
+									</div>
 
-							<Button
-								variant="ghost"
-								size="sm"
-								onClick={() => setSelectedTokenPriority("")}
-								className="h-8 w-8 flex-shrink-0 p-0 transition-colors hover:bg-destructive/10 hover:text-destructive"
-								aria-label="Clear selection"
-								disabled={isLoading}
-							>
-								<X className="h-4 w-4" />
-							</Button>
-						</CardContent>
-					</Card>
-				</div>
+									<Button
+										variant="default"
+										size="sm"
+										onClick={handleSetTokenPriority}
+										disabled={isLoading}
+									>
+										{isLoading && <Loader2 className="size-4 animate-spin" />}
+										Set as priority
+									</Button>
+
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => setSelectedTokenPriority("")}
+										className="h-8 w-8 flex-shrink-0 p-0 transition-colors hover:bg-destructive/10 hover:text-destructive"
+										aria-label="Clear selection"
+										disabled={isLoading}
+									>
+										<X className="h-4 w-4" />
+									</Button>
+								</CardContent>
+							</Card>
+						</div>
+					)}
+				</>
 			)}
 
 			<PrioritySuccessModal
