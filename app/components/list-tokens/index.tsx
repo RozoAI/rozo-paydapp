@@ -43,6 +43,7 @@ export default function ListTokens() {
 	const [isFetching, setIsFetching] = useState(false);
 	const [isError, setIsError] = useState(false);
 	const [selectedTokenPriority, setSelectedTokenPriority] = useState("");
+	const [retryCount, setRetryCount] = useState(0);
 
 	const prioritySuccessModalRef = useRef<PrioritySuccessModalRef>(null);
 
@@ -145,6 +146,7 @@ export default function ListTokens() {
 				}) as TokenBalance[];
 
 			setTokenBalances(processedTokens);
+			setRetryCount(0); // Reset retry count on success
 		} catch (error) {
 			console.error("Failed to fetch token balances:", error);
 			setIsError(true);
@@ -161,6 +163,7 @@ export default function ListTokens() {
 			setTokenBalances([]);
 			setIsFetching(false);
 			setIsError(false);
+			setRetryCount(0);
 			isFetchingRef.current = false;
 			return;
 		}
@@ -173,6 +176,21 @@ export default function ListTokens() {
 			isFetchingRef.current = false;
 		});
 	}, [isConnected, address]);
+
+	// Auto-retry when error occurs
+	useEffect(() => {
+		if (isError && address && isConnected && retryCount < 3) {
+			const retryTimeout = setTimeout(
+				() => {
+					setRetryCount((prev) => prev + 1);
+					fetchTokenBalances(address);
+				},
+				2000 * (retryCount + 1),
+			); // Exponential backoff: 2s, 4s, 6s
+
+			return () => clearTimeout(retryTimeout);
+		}
+	}, [isError, address, isConnected, retryCount]);
 
 	const handleSetTokenPriority = async () => {
 		if (!selectedToken) return;
@@ -198,14 +216,18 @@ export default function ListTokens() {
 
 	const handleRetry = () => {
 		if (address) {
+			setRetryCount(0);
 			fetchTokenBalances(address);
 		}
 	};
 
-	if (isError) {
+	if (isError && retryCount >= 3) {
 		return (
 			<div className="mt-6 flex flex-col items-center gap-2">
 				<div className="text-destructive">Error fetching token balances</div>
+				<div className="text-muted-foreground text-sm">
+					Retried {retryCount} times
+				</div>
 				<Button variant="outline" onClick={handleRetry}>
 					Try again
 				</Button>
@@ -213,35 +235,23 @@ export default function ListTokens() {
 		);
 	}
 
-	if (!isConnected || !address) {
-		return null;
-	}
-
 	return (
 		<div className="mt-8 flex w-full flex-col gap-3">
-			<div className="mb-4">
-				<div className="flex items-start justify-between">
-					<h2 className="mb-2 font-bold text-2xl">
-						Choose your token priority
-					</h2>
-					<div className="flex items-center gap-2">
-						<a
-							href="https://docs.google.com/document/d/1X9gncap8UKGq57WaapPY_TtYPx5zY87nqnZkm5D8iN8/edit?tab=t.0"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-muted-foreground text-sm hover:text-primary hover:underline"
-						>
-							T&C
-						</a>
-						<Button variant="link" size="icon" onClick={handleRetry}>
-							<RefreshCcw className="size-4" />
-						</Button>
-					</div>
+			<div className="flex items-start justify-between">
+				<h2 className="font-bold text-2xl">Choose your preferred token</h2>
+				<div className="flex items-center gap-2">
+					<a
+						href="https://docs.google.com/document/d/1X9gncap8UKGq57WaapPY_TtYPx5zY87nqnZkm5D8iN8/edit?tab=t.0"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-muted-foreground text-sm hover:text-primary hover:underline"
+					>
+						T&C
+					</a>
+					<Button variant="link" size="icon" onClick={handleRetry}>
+						<RefreshCcw className="size-4" />
+					</Button>
 				</div>
-				<p className="text-muted-foreground">
-					Choose your preferred payment token. It will be used as default for
-					all transactions.
-				</p>
 			</div>
 
 			{isFetching && (

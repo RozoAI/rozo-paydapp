@@ -28,12 +28,14 @@ export default function Home() {
 					</span>
 				</div>
 
-				<p className="my-4 text-center text-lg">
-					Connect your wallet to access personalized token management. Select
-					your preferred payment tokens, pin your favorites as default, and
-					enjoy a streamlined crypto experience designed for mobile-first
-					interactions.
-				</p>
+				{!isConnected && !address && (
+					<p className="my-4 text-center text-lg">
+						Connect your wallet to access personalized token management. Select
+						your preferred payment tokens, pin your favorites as default, and
+						enjoy a streamlined crypto experience designed for mobile-first
+						interactions.
+					</p>
+				)}
 
 				<ConnectWalletButton />
 
